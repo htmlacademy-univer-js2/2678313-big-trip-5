@@ -28,6 +28,11 @@ export default class FiltersView {
   }
 
   getElement() {
+    if (!this.element) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = this.getTemplate();
+      this.element = wrapper.firstElementChild;
+    }
     return this.element;
   }
 }

@@ -1,5 +1,8 @@
 import FiltersView from '../view/filters.js';
-import { render } from '../framework/render';
+import SortView from '../view/sort.js';
+import RoutePointView from '../view/route-point.js';
+import EditFormView from '../view/form-editing.js';
+import { render } from '../render.js';
 
 export default class MainPresenter {
   constructor({ filtersContainer, listContainer }) {
@@ -9,5 +12,10 @@ export default class MainPresenter {
 
   init() {
     render(new FiltersView(), this.filtersContainer);
+    render(new SortView(), this.filtersContainer);
+    render(new EditFormView(), this.listContainer);
+    render(new RoutePointView(), this.listContainer);
+    render(new RoutePointView(), this.listContainer);
+    render(new RoutePointView(), this.listContainer);
   }
 }
