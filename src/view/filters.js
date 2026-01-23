@@ -1,3 +1,5 @@
+import { createElement } from '../render.js';
+
 export default class FiltersView {
   getTemplate() {
     return `
@@ -29,9 +31,7 @@ export default class FiltersView {
 
   getElement() {
     if (!this.element) {
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = this.getTemplate();
-      this.element = wrapper.firstElementChild;
+      this.element = createElement(this.getTemplate());
     }
     return this.element;
   }

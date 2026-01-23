@@ -1,3 +1,5 @@
+import { createElement } from '../render.js';
+
 export default class SortView {
   getTemplate() {
     return `
@@ -32,9 +34,7 @@ export default class SortView {
 
   getElement() {
     if (!this.element) {
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = this.getTemplate();
-      this.element = wrapper.firstElementChild;
+      this.element = createElement(this.getTemplate());
     }
     return this.element;
   }
