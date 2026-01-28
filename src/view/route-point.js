@@ -8,23 +8,50 @@ export default class RoutePointView {
   }
 
   getTemplate() {
-    const { type, basePrice, isFavorite } = this.point;
+    const { dateFrom, dateTo, type, basePrice, isFavorite } = this.point;
+    const startDate = new Date(dateFrom);
+    const endDate = new Date(dateTo);
+    const eventDate = startDate.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    }).toUpperCase();
+
+    const startTime = startDate.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const endTime = endDate.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const durationMs = endDate - startDate;
+    const minutes = Math.floor(durationMs / 60000);
+    const hours = Math.floor(minutes / 60);
+
+    let duration = '';
+    if (hours > 0) {
+      duration = `${hours}H ${minutes % 60}M`;
+    } else {
+      duration = `${minutes}M`;
+    }
 
     return `
       <li class="trip-events__item">
         <div class="event">
-          <time class="event__date" datetime="2019-03-18">MAR 18</time>
+          <time class="event__date" datetime="${dateFrom}">${eventDate}</time>
           <div class="event__type">
             <img class="event__type-icon" width="42" height="42" src="img/icons/taxi.png" alt="Event type icon">
           </div>
           <h3 class="event__title">${type.toUpperCase()} ${this.destination.name}</h3>
           <div class="event__schedule">
             <p class="event__time">
-              <time class="event__start-time" datetime="2019-03-18T10:30">10:30</time>
+              <time class="event__start-time" datetime="${dateFrom}">${startTime}</time>
               &mdash;
-              <time class="event__end-time" datetime="2019-03-18T11:00">11:00</time>
+              <time class="event__end-time" datetime="${dateTo}">${endTime}</time>
             </p>
-            <p class="event__duration">30M</p>
+            <p class="event__duration">${duration}</p>
           </div>
           <p class="event__price">
             &euro;&nbsp;<span class="event__price-value">${basePrice}</span>

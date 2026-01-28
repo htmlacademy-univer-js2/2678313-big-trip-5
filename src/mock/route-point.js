@@ -36,8 +36,8 @@ export const generateRoutePoint = () => ({
   id: 'point-1',
   type: 'flight',
   destinationId: 'dest-2',
-  dateFrom: '2019-03-18 10:30',
-  dateTo: '2019-03-18 11:00',
+  dateFrom: '2019-03-18T10:30',
+  dateTo: '2019-03-18T11:00',
   basePrice: 160,
   offers: ['offer-1', 'offer-2'],
   isFavorite: true

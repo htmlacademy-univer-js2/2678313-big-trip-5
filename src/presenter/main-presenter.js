@@ -2,17 +2,15 @@ import FiltersView from '../view/filters.js';
 import SortView from '../view/sort.js';
 import RoutePointView from '../view/route-point.js';
 import EditFormView from '../view/form-editing.js';
+import CreateFormView from '../view/form-creation.js';
 import TripEventsListView from '../view/trip-events-list';
 import { render } from '../render.js';
-import RoutePointsModel from '../model/route-points-model';
-import { destinations, offers } from '../mock/route-point';
-
 
 export default class MainPresenter {
-  constructor({ filtersContainer, listContainer }) {
+  constructor({ filtersContainer, listContainer, pointsModel }) {
     this.filtersContainer = filtersContainer;
     this.listContainer = listContainer;
-    this.pointsModel = new RoutePointsModel();
+    this.pointsModel = pointsModel;
   }
 
   init() {
@@ -23,6 +21,8 @@ export default class MainPresenter {
     render(tripEventsListView, this.listContainer);
 
     const points = this.pointsModel.getPoints();
+    const destinations = this.pointsModel.getDestinations();
+    const offers = this.pointsModel.getOffers();
 
     points.forEach((point, index) => {
       const destination = destinations.find(
@@ -34,6 +34,13 @@ export default class MainPresenter {
       );
 
       if (index === 0) {
+        render(
+          new CreateFormView({
+            destinations: this.pointsModel.getDestinations(),
+            offers: this.pointsModel.getOffers()
+          }),
+          tripEventsListView.getElement()
+        );
         render(
           new EditFormView({
             point,
