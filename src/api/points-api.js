@@ -2,7 +2,9 @@ import ApiService from '../framework/api-service.js';
 
 const Method = {
   GET: 'GET',
+  POST: 'POST',
   PUT: 'PUT',
+  DELETE: 'DELETE',
 };
 
 export default class PointsApiService extends ApiService {
@@ -31,6 +33,24 @@ export default class PointsApiService extends ApiService {
       .then(PointsApiService.adaptPointToClient);
   }
 
+  addPoint(point) {
+    return this._load({
+      url: 'points',
+      method: Method.POST,
+      body: JSON.stringify(PointsApiService.adaptNewPointToServer(point)),
+      headers: new Headers({'Content-Type': 'application/json'}),
+    })
+      .then(ApiService.parseResponse)
+      .then(PointsApiService.adaptPointToClient);
+  }
+
+  deletePoint(point) {
+    return this._load({
+      url: `points/${point.id}`,
+      method: Method.DELETE,
+    });
+  }
+
   static adaptPointsToClient(points) {
     return points.map(PointsApiService.adaptPointToClient);
   }
@@ -51,6 +71,18 @@ export default class PointsApiService extends ApiService {
   static adaptPointToServer(point) {
     return {
       'id': point.id,
+      'type': point.type,
+      'destination': point.destinationId,
+      'date_from': point.dateFrom,
+      'date_to': point.dateTo,
+      'base_price': point.basePrice,
+      'offers': point.offers,
+      'is_favorite': point.isFavorite,
+    };
+  }
+
+  static adaptNewPointToServer(point) {
+    return {
       'type': point.type,
       'destination': point.destinationId,
       'date_from': point.dateFrom,

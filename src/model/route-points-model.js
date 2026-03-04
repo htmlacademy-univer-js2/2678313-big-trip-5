@@ -67,11 +67,14 @@ export default class RoutePointsModel {
     return response;
   }
 
-  addPoint(newPoint) {
-    this.#points = [newPoint, ...this.#points];
+  async addPoint(newPoint) {
+    const response = await this.#apiService.addPoint(newPoint);
+    this.#points = [response, ...this.#points];
+    return response;
   }
 
-  deletePoint(pointToDelete) {
+  async deletePoint(pointToDelete) {
+    await this.#apiService.deletePoint(pointToDelete);
     this.#points = this.#points.filter((point) => point.id !== pointToDelete.id);
   }
 }

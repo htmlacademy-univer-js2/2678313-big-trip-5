@@ -1,6 +1,5 @@
-import { nanoid } from 'nanoid';
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
-import { formatDateForInput, formatDateForPoint, initDatepickers, clearDatepickers, normalizeDateRange } from './date-utils.js';
+import { formatDateForInput, formatDateForPoint, hasValidDateRange, initDatepickers, clearDatepickers, normalizeDateRange } from './date-utils.js';
 import { TYPES } from '../const.js';
 
 export default class CreateFormView extends AbstractStatefulView{
@@ -18,11 +17,15 @@ export default class CreateFormView extends AbstractStatefulView{
     this.#onSubmit = onSubmit;
     this.#onCancel = onCancel;
     const now = new Date();
+    const dateTo = new Date(now.getTime() + 60 * 60 * 1000);
     this._state = {
       type: 'flight',
       destinationId: destinations[0]?.id || null,
       dateFrom: now,
-      dateTo: now
+      dateTo,
+      basePrice: '',
+      isDisabled: false,
+      isSaving: false
     };
 
     this._restoreHandlers();
@@ -59,6 +62,7 @@ export default class CreateFormView extends AbstractStatefulView{
   }
 
   get template() {
+    const { basePrice, isDisabled, isSaving } = this._state;
     const destinationOptions = this.#destinations.map((dest) => `<option value="${dest.name}"></option>`).join('');
     const destinationName = this.#destinations.find((item) => item.id === this._state.destinationId)?.name || '';
     const dateFrom = formatDateForInput(this._state.dateFrom);
@@ -98,7 +102,7 @@ export default class CreateFormView extends AbstractStatefulView{
                   <legend class="visually-hidden">Event type</legend>
                   ${TYPES.map((eventType) => `
                     <div class="event__type-item">
-                      <input id="event-type-${eventType}-create" class="event__type-input  visually-hidden" type="radio" name="event-type" value="${eventType}" ${this._state.type === eventType ? 'checked' : ''}>
+                      <input id="event-type-${eventType}-create" class="event__type-input  visually-hidden" type="radio" name="event-type" value="${eventType}" ${this._state.type === eventType ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
                       <label class="event__type-label  event__type-label--${eventType}" for="event-type-${eventType}-create">${eventType}</label>
                     </div>
                   `).join('')}
@@ -110,7 +114,7 @@ export default class CreateFormView extends AbstractStatefulView{
               <label class="event__label  event__type-output" for="event-destination-create">
                 ${this._state.type}
               </label>
-              <input class="event__input  event__input--destination" id="event-destination-create" type="text" name="event-destination" list="destination-list-create" value="${destinationName}" required>
+              <input class="event__input  event__input--destination" id="event-destination-create" type="text" name="event-destination" list="destination-list-create" value="${destinationName}" required ${isDisabled ? 'disabled' : ''}>
               <datalist id="destination-list-create">
                 ${destinationOptions}
               </datalist>
@@ -118,10 +122,10 @@ export default class CreateFormView extends AbstractStatefulView{
 
             <div class="event__field-group  event__field-group--time">
               <label class="visually-hidden" for="event-start-time-create">From</label>
-              <input class="event__input  event__input--time" id="event-start-time-create" type="text" name="event-start-time" value="${dateFrom}">
+              <input class="event__input  event__input--time" id="event-start-time-create" type="text" name="event-start-time" value="${dateFrom}" ${isDisabled ? 'disabled' : ''}>
               &mdash;
               <label class="visually-hidden" for="event-end-time-create">To</label>
-              <input class="event__input  event__input--time" id="event-end-time-create" type="text" name="event-end-time" value="${dateTo}">
+              <input class="event__input  event__input--time" id="event-end-time-create" type="text" name="event-end-time" value="${dateTo}" ${isDisabled ? 'disabled' : ''}>
             </div>
 
             <div class="event__field-group  event__field-group--price">
@@ -129,11 +133,11 @@ export default class CreateFormView extends AbstractStatefulView{
                 <span class="visually-hidden">Price</span>
                 &euro;
               </label>
-              <input class="event__input  event__input--price" id="event-price-create" type="text" inputmode="numeric" name="event-price" value="" required>
+              <input class="event__input  event__input--price" id="event-price-create" type="text" inputmode="numeric" name="event-price" value="${basePrice}" required ${isDisabled ? 'disabled' : ''}>
             </div>
 
-            <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-            <button class="event__reset-btn" type="reset">Cancel</button>
+            <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${isSaving ? 'Saving...' : 'Save'}</button>
+            <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>Cancel</button>
           </header>
           <section class="event__details">
             <section class="event__section  event__section--offers">
@@ -206,9 +210,25 @@ export default class CreateFormView extends AbstractStatefulView{
     super.removeElement();
   }
 
+  setSaving() {
+    this.updateElement({
+      isDisabled: true,
+      isSaving: true
+    });
+  }
+
+  resetState() {
+    this.updateElement({
+      isDisabled: false,
+      isSaving: false
+    });
+  }
+
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
     const destinationInput = this.element.querySelector('.event__input--destination');
+    const priceInput = this.element.querySelector('.event__input--price');
+    const dateToInput = this.element.querySelector('[name="event-end-time"]');
     const destination = this.#destinations.find((item) => item.name === destinationInput.value.trim());
 
     if (!destination) {
@@ -217,14 +237,26 @@ export default class CreateFormView extends AbstractStatefulView{
       return;
     }
 
-    const priceValue = this.element.querySelector('.event__input--price').value.trim();
-    const basePrice = Number(priceValue);
-    if (!Number.isFinite(basePrice)) {
+    this._setState({ destinationId: destination.id });
+
+    const basePrice = Number(this._state.basePrice);
+    if (!Number.isFinite(basePrice) || basePrice <= 0) {
+      priceInput.setCustomValidity('Price must be greater than 0');
+      priceInput.reportValidity();
       return;
     }
 
+    priceInput.setCustomValidity('');
+
+    if (!hasValidDateRange(this._state.dateFrom, this._state.dateTo)) {
+      dateToInput.setCustomValidity('End date must be later than start date');
+      dateToInput.reportValidity();
+      return;
+    }
+
+    dateToInput.setCustomValidity('');
+
     this.#onSubmit({
-      id: nanoid(),
       type: this._state.type,
       destinationId: destination.id,
       dateFrom: formatDateForPoint(this._state.dateFrom),
@@ -262,6 +294,9 @@ export default class CreateFormView extends AbstractStatefulView{
   };
 
   #priceInputHandler = (evt) => {
-    evt.target.value = evt.target.value.replace(/\D/g, '');
+    const sanitizedValue = evt.target.value.replace(/\D/g, '');
+    evt.target.value = sanitizedValue;
+    evt.target.setCustomValidity('');
+    this._setState({ basePrice: sanitizedValue });
   };
 }

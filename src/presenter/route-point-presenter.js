@@ -59,19 +59,35 @@ export default class RoutePointPresenter {
     this.#replaceFormToPoint();
   };
 
-  #handleFormSubmit = (updatedPoint) => {
-    this.#onDataChange(UserAction.UPDATE_POINT, updatedPoint);
+  #handleFormSubmit = async (updatedPoint) => {
+    this.#editFormView.setSaving();
+
+    try {
+      await this.#onDataChange(UserAction.UPDATE_POINT, updatedPoint);
+    } catch {
+      this.#editFormView.shake(() => this.#editFormView.resetState());
+    }
   };
 
-  #handleDeleteClick = (point) => {
-    this.#onDataChange(UserAction.DELETE_POINT, point);
+  #handleDeleteClick = async (point) => {
+    this.#editFormView.setDeleting();
+
+    try {
+      await this.#onDataChange(UserAction.DELETE_POINT, point);
+    } catch {
+      this.#editFormView.shake(() => this.#editFormView.resetState());
+    }
   };
 
-  #handleFavoriteClick = () => {
-    this.#onDataChange(UserAction.UPDATE_POINT, {
-      ...this.#point,
-      isFavorite: !this.#point.isFavorite
-    });
+  #handleFavoriteClick = async () => {
+    try {
+      await this.#onDataChange(UserAction.UPDATE_POINT, {
+        ...this.#point,
+        isFavorite: !this.#point.isFavorite
+      });
+    } catch {
+      // Keep the current view state when the server rejects the update.
+    }
   };
 
   destroy() {

@@ -3,6 +3,7 @@ import CreateFormView from '../view/form-creation.js';
 import TripEventsListView from '../view/trip-events-list.js';
 import NoPointsView from '../view/no-points.js';
 import { render, remove, RenderPosition } from '../framework/render.js';
+import UiBlocker from '../framework/ui-blocker/ui-blocker.js';
 import RoutePointPresenter from './route-point-presenter.js';
 import { SortType, UpdateType, FilterType, UserAction } from '../const.js';
 import { filter } from '../filter.js';
@@ -22,6 +23,10 @@ export default class MainPresenter {
   #currentSortType = SortType.DAY;
   #boardPoints = [];
   #isCreating = false;
+  #uiBlocker = new UiBlocker({
+    lowerLimit: 350,
+    upperLimit: 1000
+  });
 
   constructor({ listContainer, pointsModel, filterModel, newEventButton }) {
     this.#listContainer = listContainer;
@@ -32,29 +37,26 @@ export default class MainPresenter {
   }
 
   #handlePointChange = async (actionType, update) => {
-    let shouldRender = true;
-    switch (actionType) {
-      case UserAction.UPDATE_POINT:
-        try {
+    this.#uiBlocker.block();
+
+    try {
+      switch (actionType) {
+        case UserAction.UPDATE_POINT:
           await this.#pointsModel.updatePoint(update);
-        } catch {
-          shouldRender = false;
-        }
-        break;
-      case UserAction.DELETE_POINT:
-        this.#pointsModel.deletePoint(update);
-        break;
-      case UserAction.ADD_POINT:
-        this.#pointsModel.addPoint(update);
-        break;
-    }
+          break;
+        case UserAction.DELETE_POINT:
+          await this.#pointsModel.deletePoint(update);
+          break;
+        case UserAction.ADD_POINT:
+          await this.#pointsModel.addPoint(update);
+          break;
+      }
 
-    if (!shouldRender) {
-      return;
+      this.#clearBoard();
+      this.#renderBoard();
+    } finally {
+      this.#uiBlocker.unblock();
     }
-
-    this.#clearBoard();
-    this.#renderBoard();
   };
 
   #handleModeChange = () => {
@@ -104,10 +106,21 @@ export default class MainPresenter {
     this.#renderBoard();
   };
 
-  #handleCreateFormSubmit = (newPoint) => {
-    this.#isCreating = false;
-    this.#toggleNewEventButton(false);
-    this.#handlePointChange(UserAction.ADD_POINT, newPoint);
+  #handleCreateFormSubmit = async (newPoint) => {
+    this.#createFormView.setSaving();
+    this.#uiBlocker.block();
+
+    try {
+      await this.#pointsModel.addPoint(newPoint);
+      this.#isCreating = false;
+      this.#toggleNewEventButton(false);
+      this.#clearBoard();
+      this.#renderBoard();
+    } catch {
+      this.#createFormView.shake(() => this.#createFormView.resetState());
+    } finally {
+      this.#uiBlocker.unblock();
+    }
   };
 
   #handleCreateFormCancel = () => {

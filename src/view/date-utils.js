@@ -4,6 +4,7 @@ import { HOUR_IN_MINUTES, DAY_IN_MINUTES } from '../const.js';
 
 const formatDateForInput = (date) => dayjs(date).format('DD/MM/YY HH:mm');
 const formatDateForPoint = (date) => dayjs(date).toISOString();
+const hasValidDateRange = (dateFrom, dateTo) => dayjs(dateTo).isAfter(dayjs(dateFrom));
 
 const destroyDatepickers = (dateFromPicker, dateToPicker) => {
   dateFromPicker?.destroy();
@@ -75,4 +76,4 @@ const formatDuration = (dateFrom, dateTo) => {
   return `${String(days).padStart(2, '0')}D ${String(restHours).padStart(2, '0')}H ${String(restMinutes).padStart(2, '0')}M`;
 };
 
-export { formatDateForInput, formatDateForPoint, destroyDatepickers, createDatepickers, initDatepickers, clearDatepickers, normalizeDateRange, formatDuration };
+export { formatDateForInput, formatDateForPoint, hasValidDateRange, destroyDatepickers, createDatepickers, initDatepickers, clearDatepickers, normalizeDateRange, formatDuration };
